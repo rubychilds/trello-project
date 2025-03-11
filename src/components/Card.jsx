@@ -7,12 +7,15 @@ import {
   LinkIcon,
   TagIcon,
   PaperClipIcon,
+  XMarkIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 
 export default function Card({ card, onUpdate }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedCard, setEditedCard] = useState(card);
+  const [editingLabelIndex, setEditingLabelIndex] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -24,6 +27,20 @@ export default function Card({ card, onUpdate }) {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleLabelChange = (index, field, value) => {
+    const updatedLabels = [...(editedCard.labels || [])];
+    updatedLabels[index] = {
+      ...updatedLabels[index],
+      [field]: value
+    };
+    handleInputChange('labels', updatedLabels);
+  };
+
+  const handleDeleteLabel = (indexToDelete) => {
+    const updatedLabels = editedCard.labels?.filter((_, index) => index !== indexToDelete) || [];
+    handleInputChange('labels', updatedLabels);
   };
 
   const handleSave = () => {
@@ -133,13 +150,47 @@ export default function Card({ card, onUpdate }) {
               <label className="block text-sm font-medium text-gray-700">Labels</label>
               <div className="mt-1 flex flex-wrap gap-2">
                 {editedCard.labels?.map((label, index) => (
-                  <span
-                    key={index}
-                    className="px-2 py-1 rounded text-sm font-medium"
-                    style={{ backgroundColor: label.color, color: 'white' }}
-                  >
-                    {label.name}
-                  </span>
+                  <div key={index} className="group relative flex items-center">
+                    {editingLabelIndex === index ? (
+                      <div className="flex items-center gap-2 p-1 bg-white border rounded shadow-sm">
+                        <input
+                          type="text"
+                          value={label.name}
+                          onChange={(e) => handleLabelChange(index, 'name', e.target.value)}
+                          className="text-sm px-1 w-24 border-none focus:ring-0"
+                          autoFocus
+                          onBlur={() => setEditingLabelIndex(null)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setEditingLabelIndex(null);
+                            }
+                          }}
+                        />
+                        <input
+                          type="color"
+                          value={label.color}
+                          onChange={(e) => handleLabelChange(index, 'color', e.target.value)}
+                          className="w-6 h-6 p-0 border-none"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="px-2 py-1 rounded text-sm font-medium cursor-pointer"
+                          style={{ backgroundColor: label.color, color: 'white' }}
+                          onClick={() => setEditingLabelIndex(index)}
+                        >
+                          {label.name}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteLabel(index)}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+                        >
+                          <XMarkIcon className="w-3 h-3 text-gray-500" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 ))}
                 <button
                   onClick={() => {
@@ -147,11 +198,14 @@ export default function Card({ card, onUpdate }) {
                       name: 'New Label',
                       color: '#' + Math.floor(Math.random()*16777215).toString(16)
                     };
+                    const newIndex = (editedCard.labels || []).length;
                     handleInputChange('labels', [...(editedCard.labels || []), newLabel]);
+                    setEditingLabelIndex(newIndex);
                   }}
-                  className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-600 rounded"
+                  className="px-2 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-600 rounded flex items-center gap-1"
                 >
-                  + Add Label
+                  <TagIcon className="w-4 h-4" />
+                  Add Label
                 </button>
               </div>
             </div>
